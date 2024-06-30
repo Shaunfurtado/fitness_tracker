@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker Entries</title>
+    <link rel="stylesheet" href="https://matcha.mizu.sh/matcha.css">
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.6.0/dist/htmx.min.js"></script>
+</head>
+<body>
+    <h1>Fitness Entries</h1>
+    <div id="entries" hx-get="/entries">
+    </div>
+
+    <script>
+        document.body.addEventListener('click', function(event) {
+            if (event.target.matches('.delete-entry')) {
+                const entryId = event.target.getAttribute('data-entry-id');
+                if (entryId) {
+                    deleteEntry(entryId);
+                }
+            }
+        });
+
+        async function deleteEntry(id) {
+            try {
+                const response = await fetch(`/delete/${id}`, { method: 'POST' });
+                if (response.ok) {
+                    document.getElementById('entries').htmx.refresh();
+                } else {
+                    alert('Failed to delete entry');
+                }
+            } catch (error) {
+                console.error('Error deleting entry:', error);
+                alert('Failed to delete entry');
+            }
+        }
+    </script>
+</body>
+</html>

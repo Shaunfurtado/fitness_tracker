@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker Form</title>
+    <link rel="stylesheet" href="https://matcha.mizu.sh/matcha.css">
+</head>
+<body>
+    <form action="/submit" method="POST" enctype="multipart/form-data">
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" required>
+        
+        <label for="image1">Front:</label>
+        <input type="file" id="image1" name="image1" accept="image/*" required>
+        
+        <label for="image2">Side:</label>
+        <input type="file" id="image2" name="image2" accept="image/*" required>
+        
+        <label for="image3">Back:</label>
+        <input type="file" id="image3" name="image3" accept="image/*" required>
+        
+        <label for="image4">Back Flex:</label>
+        <input type="file" id="image4" name="image4" accept="image/*" required>
+        
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
