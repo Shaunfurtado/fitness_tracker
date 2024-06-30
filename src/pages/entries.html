@@ -13,6 +13,7 @@
     </div>
 
     <script>
+        // HTMX Trigger to handle delete button click
         document.body.addEventListener('click', function(event) {
             if (event.target.matches('.delete-entry')) {
                 const entryId = event.target.getAttribute('data-entry-id');

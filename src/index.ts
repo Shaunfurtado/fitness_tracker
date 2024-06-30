@@ -98,11 +98,33 @@ async function serveUploadedFiles(pathname: string) {
 }
 
 async function deleteEntry(id: string) {
+    const entry = db.query("SELECT * FROM fitness_entries WHERE id = ?", id).first();
+
+    if (!entry) {
+        return new Response(null, {
+            status: 404,
+        });
+    }
+
+    // Delete images from filesystem if they exist
+    const imagesToDelete = [entry.image1, entry.image2, entry.image3, entry.image4].filter(image => image);
+    imagesToDelete.forEach(image => {
+        const imagePath = join(".", image);
+        try {
+            unlinkSync(imagePath);
+        } catch (error) {
+            console.error(`Error deleting image ${imagePath}:`, error);
+        }
+    });
+
+    // Delete entry from database
     db.run(`DELETE FROM fitness_entries WHERE id = ?`, id);
+
     return new Response(null, {
         status: 200,
     });
 }
+
 
 function getContentType(filePath: string): string {
     const extension = filePath.split(".").pop();
