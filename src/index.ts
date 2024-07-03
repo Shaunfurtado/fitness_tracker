@@ -1,142 +1,159 @@
-import { serve } from "bun";
-import db from "./db";
-import { writeFileSync, readFileSync, unlinkSync } from "fs";
-import { join } from "path";
-import { v4 as uuidv4 } from "uuid";
+import { Elysia, t } from 'elysia';
+import { Database } from 'bun:sqlite';
+import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { sql } from "drizzle-orm";
+import { text, integer, sqliteTable } from "drizzle-orm/sqlite-core";
+import { v4 as uuidv4 } from 'uuid';
+import { writeFileSync, readFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
 
-serve({
-    fetch(request) {
-        const url = new URL(request.url);
-
-        if (url.pathname === "/submit" && request.method === "POST") {
-            return handleFormSubmission(request);
-        } else if (url.pathname === "/entries" && request.method === "GET") {
-            return renderEntriesPage();
-        } else if (url.pathname.startsWith("/uploads/")) {
-            return serveUploadedFiles(url.pathname);
-        } else if (url.pathname.startsWith("/delete/")) {
-            const entryId = url.pathname.split("/")[2];
-            return deleteEntry(entryId);
-        } else {
-            return renderFormPage();
-        }
-    },
-    port: 3000,
-});
-
-async function handleFormSubmission(request: Request) {
-    const formData = await request.formData();
-    const date = formData.get("date");
+// Define the schema
+const fitnessEntries = sqliteTable('fitness_entries', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    date: text('date').notNull(),
+    image1: text('image1'),
+    image2: text('image2'),
+    image3: text('image3'),
+    image4: text('image4')
+  });
+  
+  // Initialize the database
+  const sqlite = new Database('fitness_tracker.sqlite');
+  const db = drizzle(sqlite);
+  
+  // Create the table if it doesn't exist
+  db.run(sql`
+    CREATE TABLE IF NOT EXISTS fitness_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      image1 TEXT,
+      image2 TEXT,
+      image3 TEXT,
+      image4 TEXT
+    );
+  `);
+  const app = new Elysia()
+  .post('/submit', async ({ body, set }) => {
+    const { date, image1, image2, image3, image4 } = body;
 
     const images = await Promise.all(
-        ["image1", "image2", "image3", "image4"].map(async (imageKey) => {
-            const image = formData.get(imageKey) as File;
-            if (image) {
-                const imageId = uuidv4();
-                const imagePath = join("uploads", `${imageId}_${image.name}`);
-                writeFileSync(imagePath, new Uint8Array(await image.arrayBuffer()));
-                return imagePath;
-            }
-            return null;
-        })
+      [image1, image2, image3, image4].map(async (image) => {
+        if (image) {
+          const imageId = uuidv4();
+          const imagePath = join('uploads', `${imageId}_${image.name}`);
+          writeFileSync(imagePath, new Uint8Array(await image.arrayBuffer()));
+          return imagePath;
+        }
+        return null;
+      })
     );
 
-    db.run(
-        `INSERT INTO fitness_entries (date, image1, image2, image3, image4) VALUES (?, ?, ?, ?, ?)`,
-        date, images[0], images[1], images[2], images[3]
-    );
-
-    return new Response(null, {
-        status: 302,
-        headers: {
-            "Location": "/entries",
-        },
-    });
-}
-
-async function renderFormPage() {
-    const formHtml = await Bun.file("./src/pages/form.html").text();
-    return new Response(formHtml, {
-        headers: { "Content-Type": "text/html" },
-    });
-}
-
-async function renderEntriesPage() {
-    const entries = db.query("SELECT * FROM fitness_entries ORDER BY date DESC").all();
-    let entriesHtml = await Bun.file("./src/pages/entries.html").text();
-
-    entries.forEach((entry) => {
-        entriesHtml += `
-            <div class="card">
-                <h3>${entry.date}</h3>
-                <div class="carousel">
-                    ${entry.image1 ? `<img src="/${entry.image1}" alt="Image 1">` : ""}
-                    ${entry.image2 ? `<img src="/${entry.image2}" alt="Image 2">` : ""}
-                    ${entry.image3 ? `<img src="/${entry.image3}" alt="Image 3">` : ""}
-                    ${entry.image4 ? `<img src="/${entry.image4}" alt="Image 4">` : ""}
-                </div>
-                <button class="delete-entry" data-entry-id="${entry.id}">Delete</button>
-            </div>
-        `;
+    await db.insert(fitnessEntries).values({
+      date,
+      image1: images[0],
+      image2: images[1],
+      image3: images[2],
+      image4: images[3]
     });
 
-    return new Response(entriesHtml, {
-        headers: { "Content-Type": "text/html" },
-    });
-}
-
-async function serveUploadedFiles(pathname: string) {
-    const filePath = join(".", pathname);
+    set.redirect = '/entries';
+  }, {
+    body: t.Object({
+      date: t.String(),
+      image1: t.Optional(t.File()),
+      image2: t.Optional(t.File()),
+      image3: t.Optional(t.File()),
+      image4: t.Optional(t.File())
+    })
+  })
+  .get('/entries', async () => {
     try {
-        const fileContent = readFileSync(filePath);
-        return new Response(fileContent, {
-            headers: { "Content-Type": getContentType(filePath) },
-        });
+      const entries = await db.select().from(fitnessEntries).orderBy(sql`date DESC`);
+      console.log("Fetched entries:", entries); // Log fetched entries
+  
+      const entriesHtml = await Bun.file('./src/pages/entries.html').text();
+      console.log("Loaded HTML template"); // Log successful HTML loading
+  
+      let entriesContent = '';
+      entries.forEach((entry) => {
+        entriesContent += `
+          <div class="card">
+            <h3>${entry.date}</h3>
+            <div class="carousel">
+              ${entry.image1 ? `<img src="/${entry.image1}" alt="Image 1">` : ""}
+              ${entry.image2 ? `<img src="/${entry.image2}" alt="Image 2">` : ""}
+              ${entry.image3 ? `<img src="/${entry.image3}" alt="Image 3">` : ""}
+              ${entry.image4 ? `<img src="/${entry.image4}" alt="Image 4">` : ""}
+            </div>
+            <button class="delete-entry" data-entry-id="${entry.id}">Delete</button>
+          </div>
+        `;
+      });
+      console.log("Generated entries content"); // Log successful content generation
+  
+      const finalHtml = entriesHtml.replace('<div id="entries">', `<div id="entries">${entriesContent}`);
+      console.log("Final HTML length:", finalHtml.length); // Log the length of the final HTML
+  
+      return new Response(finalHtml, {
+        headers: { 'Content-Type': 'text/html' }
+      });
     } catch (error) {
-        return new Response("File not found", { status: 404 });
+      console.error("Error in /entries route:", error);
+      return new Response("An error occurred while loading entries", { status: 500 });
     }
-}
-
-async function deleteEntry(id: string) {
-    const entry = db.query("SELECT * FROM fitness_entries WHERE id = ?", id).first();
+  })
+  .get('/uploads/:filename', ({ params: { filename } }) => {
+    const filePath = join('.', 'uploads', filename);
+    try {
+      const fileContent = readFileSync(filePath);
+      return new Response(fileContent, {
+        headers: { 'Content-Type': getContentType(filePath) }
+      });
+    } catch (error) {
+      return new Response('File not found', { status: 404 });
+    }
+  })
+  .delete('/delete/:id', async ({ params: { id } }) => {
+    const entry = await db.select().from(fitnessEntries).where(sql`id = ${id}`).get();
 
     if (!entry) {
-        return new Response(null, {
-            status: 404,
-        });
+      return new Response(null, { status: 404 });
     }
 
     // Delete images from filesystem if they exist
     const imagesToDelete = [entry.image1, entry.image2, entry.image3, entry.image4].filter(image => image);
     imagesToDelete.forEach(image => {
-        const imagePath = join(".", image);
+      if (image) {
+        const imagePath = join('.', image);
         try {
-            unlinkSync(imagePath);
+          unlinkSync(imagePath);
         } catch (error) {
-            console.error(`Error deleting image ${imagePath}:`, error);
+          console.error(`Error deleting image ${imagePath}:`, error);
         }
+      }
     });
 
     // Delete entry from database
-    db.run(`DELETE FROM fitness_entries WHERE id = ?`, id);
+    await db.delete(fitnessEntries).where(sql`id = ${id}`);
 
-    return new Response(null, {
-        status: 200,
-    });
-}
+    return new Response(null, { status: 200 });
+  })
+  .get('/', () => Bun.file('./src/pages/form.html'))
+  .listen(3000);
 
+console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
 
 function getContentType(filePath: string): string {
-    const extension = filePath.split(".").pop();
-    switch (extension) {
-        case "jpg":
-        case "jpeg":
-            return "image/jpeg";
-        case "png":
-            return "image/png";
-        case "gif":
-            return "image/gif";
-        default:
-            return "application/octet-stream";
-    }
+  const extension = filePath.split('.').pop();
+  switch (extension) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    default:
+      return 'application/octet-stream';
+  }
 }

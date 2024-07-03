@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fitness Tracker Entries</title>
     <link rel="stylesheet" href="https://matcha.mizu.sh/matcha.css">
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.6.0/dist/htmx.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
     <h1>Fitness Entries</h1>
-    <div id="entries" hx-get="/entries">
+    <div id="entries">
+        <!-- Entries will be populated here by the server -->
     </div>
 
     <script>
-        // HTMX Trigger to handle delete button click
         document.body.addEventListener('click', function(event) {
             if (event.target.matches('.delete-entry')) {
                 const entryId = event.target.getAttribute('data-entry-id');
@@ -25,9 +25,10 @@
 
         async function deleteEntry(id) {
             try {
-                const response = await fetch(`/delete/${id}`, { method: 'POST' });
+                const response = await fetch(`/delete/${id}`, { method: 'DELETE' });
                 if (response.ok) {
-                    document.getElementById('entries').htmx.refresh();
+                    // Refresh the page to show updated entries
+                    window.location.reload();
                 } else {
                     alert('Failed to delete entry');
                 }
