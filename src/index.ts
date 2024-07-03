@@ -69,31 +69,26 @@ const fitnessEntries = sqliteTable('fitness_entries', {
   .get('/entries', async () => {
     try {
       const entries = await db.select().from(fitnessEntries).orderBy(sql`date DESC`);
-      console.log("Fetched entries:", entries); // Log fetched entries
-  
       const entriesHtml = await Bun.file('./src/pages/entries.html').text();
-      console.log("Loaded HTML template"); // Log successful HTML loading
-  
+      
       let entriesContent = '';
       entries.forEach((entry) => {
         entriesContent += `
-          <div class="card">
-            <h3>${entry.date}</h3>
-            <div class="carousel">
+          <div class="card p-4">
+            <h3 class="text-xl font-semibold mb-2">${entry.date}</h3>
+            <div class="carousel mb-4">
               ${entry.image1 ? `<img src="/${entry.image1}" alt="Image 1">` : ""}
               ${entry.image2 ? `<img src="/${entry.image2}" alt="Image 2">` : ""}
               ${entry.image3 ? `<img src="/${entry.image3}" alt="Image 3">` : ""}
               ${entry.image4 ? `<img src="/${entry.image4}" alt="Image 4">` : ""}
             </div>
-            <button class="delete-entry" data-entry-id="${entry.id}">Delete</button>
+            <button class="btn delete-entry w-full" data-entry-id="${entry.id}">Delete</button>
           </div>
         `;
       });
-      console.log("Generated entries content"); // Log successful content generation
   
-      const finalHtml = entriesHtml.replace('<div id="entries">', `<div id="entries">${entriesContent}`);
-      console.log("Final HTML length:", finalHtml.length); // Log the length of the final HTML
-  
+      const finalHtml = entriesHtml.replace('<div id="entries" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">', `<div id="entries" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">${entriesContent}`);
+      
       return new Response(finalHtml, {
         headers: { 'Content-Type': 'text/html' }
       });
