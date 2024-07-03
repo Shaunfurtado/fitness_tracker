@@ -9,9 +9,10 @@
   },
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts",
+    "build": "bun build src/index.ts --target=bun",
     "start": "NODE_ENV=production bun src/index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "bundle": "bun bundle src/index.ts --output dist/index.bundle.js"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -20,7 +21,6 @@
     "drizzle-orm": "^0.31.2",
     "elysia": "^1.0.27",
     "htmx": "^0.0.2",
-    "matcha": "lowlighter/matcha",
     "sqlite": "^5.1.1",
     "uuid": "^10.0.0"
   }
