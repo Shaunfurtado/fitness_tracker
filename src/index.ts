@@ -136,7 +136,7 @@ const fitnessEntries = sqliteTable('fitness_entries', {
   .get('/', () => Bun.file('./src/pages/form.html'))
   .listen(3000);
 
-console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
+console.log(`🦊 Elysia is running at http://${app.server?.hostname}:${app.server?.port}`);
 
 function getContentType(filePath: string): string {
   const extension = filePath.split('.').pop();
