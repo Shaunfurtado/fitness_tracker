@@ -1,15 +1,32 @@
-# fitness_tracker
+# Fitness Tracker
 
-To install dependencies:
+A fitness tracker designed to monitor and record daily physique updates. This application helps users stay on top of their fitness goals and track their progress over time.
 
-```bash
-bun install
-```
+## Features
+- Daily physique updates
+- Progress tracking
+- User-friendly interface
 
-To run:
+## Tech Stack
+**Bun, Elysia, HTMX, SQLite, Drizzle**
 
-```bash
-bun run index.ts
-```
+## Installation
 
-This project was created using `bun init` in bun v1.1.17. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+1. **Clone the repository:**
+    ```bash
+    git clone https://github.com/Shaunfurtado/fitness_tracker.git
+    cd fitness_tracker
+    ```
+
+2. **Install dependencies:**
+    ```bash
+    bun install
+    ```
+
+3. **Start the application:**
+    ```bash
+    bun dev
+    ```
+
+
+Happy tracking!
